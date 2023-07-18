@@ -1,0 +1,59 @@
+---
+title: "analysis - shiny"
+format: html
+server: shiny
+---
+  
+```{r}
+#| echo: false
+#| output: false
+#| 
+library(babynames)
+library(knitr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+head(babynames) |> kable()
+```
+
+
+```{r}
+sliderInput("n_names", "Number of names:", 
+            min = 1, max = 50, value = 5)
+plotOutput("distPlot")
+```
+
+
+
+```{r}
+#| context: server
+get_most_frequent <- function(babynames, select_sex, from = 1950) {
+  most_freq <- babynames |>
+    filter(sex == select_sex, year > from) |>
+    group_by(name) |>
+    summarise(average = mean(prop)) |>
+    arrange(desc(average))
+  return(most_freq)
+}
+
+plot_top <- function(x, babynames, select_sex, top = 10, from = 1950) {
+  topx <- x$name[1:top]
+  
+  p <- babynames |>
+    filter(name %in% topx, sex == select_sex, year > from) |>
+    ggplot(aes(x = year, y = prop, color = name)) +
+    geom_line() +
+    scale_color_brewer(palette = "Paired") +
+    theme_classic()
+  
+  return(p)
+}
+
+
+
+output$distplot <- get_most_frequent(babynames, select_sex = "F") |>
+  plot_top(babynames, select_sex = "F", top = n_names)
+```
+
